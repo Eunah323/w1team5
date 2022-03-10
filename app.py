@@ -93,9 +93,6 @@ def comment_get():
     comment_list = list(db.comment.find({}, {'_id': False}))
     return jsonify({'comments': comment_list})
 
-@app.route('/posts')
-def posts():
-    return render_template('posts.html')
 @app.route('/posts/<keyword>')
 def posts(keyword):
     go_list = list(db.candidate.find({}, {'_id': False}))
@@ -208,17 +205,6 @@ def membership():
 #         return redirect(url_for("login", msg="로그인 정보가 존재하지 않습니다."))
 
 
-@app.route('/membership')
-def login():
-    msg = request.args.get("msg")
-    return render_template('membership.html', msg=msg)
-
-
-@app.route('/login', methods=['POST'])
-def sign_in():
-    # 로그인
-    return jsonify({'result': 'success'})
-
 
 @app.route('/sign_up/save', methods=['POST'])
 def sign_up():
@@ -245,25 +231,52 @@ def check_dup():
     exists = bool(db.users.find_one({"username": username_receive}))
     return jsonify({'result': 'success', 'exists': exists})
 
-@app.route("/give_like", methods=["POST"])
-def give_like():
+@app.route("/get_likes", methods=['GET'])
+def get_likes():
     token_receive = request.cookies.get('mytoken')
     try:
-    payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-    username = db.users.find_one({"username": payload["id"]})
-    cannum_receive = request.form["cannum_give"]
-    like_receive = request.form["like_give"]
-    doc= {
-        "can_num":cannum_receive,
-        "name":username["username"],
-        "status":like_receive
-    }
-    if like_receive == "like":
-        db.likes.update_one(doc)
-    else:
-        db.likes.delete_one(doc)
-    count = db.likes.count_documents({"cannum": cannum_receive, "username": username["username"]})
-    return jsonify({"result": "success", 'msg': 'updated', "count": count})
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        my_username = payload["id"]
+        can_num_receive = request.args.get("can_num_give")
+        if can_num_receive == "":
+            candidates = list(db.candidate.find({}))
+        else:
+            candidates = list(db.candidate.find({"symbol": can_num_receive})
+
+        for candidate in candidates:
+            can_num["_id"] = str(can_num["_id"])
+
+            can_num["count_heart"] = db.likes.count_documents({"can_num": can_num["_id"], "type": "heart"})
+            can_num["heart_by_me"] = bool(db.likes.find_one({"can_num": can_num["_id"], "type": "heart", "username": my_username}))
+
+
+        return jsonify({"result": "success", "msg": "후보번호를 가져왔습니다.", "can_num": can_num})
+    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+        return redirect(url_for("home"))
+
+@app.route('/update_like', methods=['POST'])
+def update_like():
+    token_receive = request.cookies.get('mytoken')
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        # 좋아요 수 변경
+        user_info = db.users.find_one({"name": payload["id"]})
+        can_num_receive = request.form["can_num_give"]
+        like_receive = request.form["like_give"]
+        type_receive = request.form["type_give"]
+        doc = {
+            "can_num": can_num_receive,
+            "name": user_info["name"],
+            "type" : type_receive
+       }
+        if like_receive == "like":
+            db.likes.update_one(doc)
+        else:
+            db.likes.delete_one(doc)
+        count = db.likes.count_documents({"can_num": can_num_receive, "name": user_info["name"]})
+        return jsonify({"result": "success", 'msg': 'updated', "count": count})
+    except (jwt.ExpiredSignatureError, jwt.exceptions.DecodeError):
+        return redirect(url_for("/login"))
 
 
 if __name__ == '__main__':

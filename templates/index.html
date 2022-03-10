@@ -22,7 +22,8 @@
 <body>
     <div class="index_header">
         <label>누구 뽑지?</label>
-        <button type="button" class="btn btn-success">로그인</button>
+        <button type="button" class="btn btn-success" onclick="move_page('/login')">로그인</button>
+        <button type="button" class="btn btn-success" onclick="move_page('/membership')">회원가입</button>
     </div>
     <div class="index_Serach">
         <select></select>
@@ -49,7 +50,7 @@
             {% endfor %}
         </div>
     </div>
-
+{% for who in list %}
     <div class="modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" >
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -61,8 +62,8 @@
               <p class="moad-desc"></p>
           </div>
           <div class="modal-footer">
-              {% set who = list.name %}
-            <button type="button" class="btn btn-primary" onclick="move_page('/posts/{{ who }}')">관련 뉴스보러가기</button>
+
+            <button type="button" class="btn btn-primary" onclick="move_page('/posts/{{ list[0].name }}')">관련 뉴스보러가기</button>
             <button type="button" class="btn btn-primary" id="update_pledge" onclick="update_modal()">공약 업데이트하기</button>
           </div>
           <div class="modal-input">
@@ -72,6 +73,7 @@
         </div>
       </div>
     </div>
+{% endfor %}
 </body>
 <script>
     let candidate_name;

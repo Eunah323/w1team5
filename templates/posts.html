@@ -37,6 +37,7 @@
           rel="stylesheet">
 
 
+
     <title>후보별페이지</title>
 
 
@@ -185,55 +186,118 @@
 
 
     <script>
+    function get_likes(username) {
+    if (username == undefined) {
+        username = ""
+    }
+    $("#post-box").empty()
+    $.ajax({
+        type: "GET",
+        url: `/get_posts?username_give=${username}`,
+        data: {},
+        success: function (response) {
+            if (response["result"] == "success") {
+                let posts = response["posts"]
+                for (let i = 0; i < posts.length; i++) {
+                    let post = posts[i]
+                    let time_post = new Date(post["date"])
+                    let time_before = time2str(time_post)
+
+                    let class_heart = post['heart_by_me'] ? "fa-heart": "fa-heart-o"
+                    let class_star = post['star_by_me'] ? "fa-star": "fa-star-o"
+                    let class_like = post['like_by_me'] ? "fa-thumbs-up" : "fa-thumbs-o-up"
+
+                    let html_temp = `<div class="box" id="${post["_id"]}">
+                                        <article class="media">
+                                            <div class="media-left">
+                                                <a class="image is-64x64" href="/user/${post['username']}">
+                                                    <img class="is-rounded" src="/static/${post['profile_pic_real']}"
+                                                         alt="Image">
+                                                </a>
+                                            </div>
+                                            <div class="media-content">
+                                                <div class="content">
+                                                    <p>
+                                                        <strong>${post['profile_name']}</strong> <small>@${post['username']}</small> <small>${time_before}</small>
+                                                        <br>
+                                                        ${post['comment']}
+                                                    </p>
+                                                </div>
+                                                <nav class="level is-mobile">
+                                                    <div class="level-left">
+                                                        <a class="level-item is-sparta" aria-label="heart" onclick="toggle_like('${post['_id']}', 'heart')">
+                                                            <span class="icon is-small"><i class="fa ${class_heart}"
+                                                                                           aria-hidden="true"></i></span>&nbsp;<span class="like-num">${num2str(post["count_heart"])}</span>
+                                                        </a>
+                                                        <a class="level-item is-sparta" aria-label="star" onclick="toggle_like('${post['_id']}', 'star')">
+                                                            <span class="icon is-small"><i class="fa ${class_star}"
+                                                                                           aria-hidden="true"></i></span>&nbsp;<span class="like-num">${num2str(post["count_star"])}</span>
+                                                        </a>
+                                                        <a class="level-item is-sparta" aria-label="like" onclick="toggle_like('${post['_id']}', 'like')">
+                                                            <span class="icon is-small"><i class="fa ${class_like}"
+                                                                                           aria-hidden="true"></i></span>&nbsp;<span class="like-num">${num2str(post["count_like"])}</span>
+                                                        </a>
+                                                    </div>
+
+                                                </nav>
+                                            </div>
+                                        </article>
+                                    </div>`
+                    $("#post-box").append(html_temp)
+                }
+            }
+        }
+    })
+}
 
 
-            function give_like(username) {
-                if (username == undefined){
-                alert('좋아요는 로그인 후 가능합니다!')}
 
-                let $a_like = $(`#${cannum} a[aria-label='heart']`)
+            function toggle_like(can_num, type) {
+                console.log(can_num, type)
+                let $a_like = $(`#${can_num} a[aria-label='${type}']`)
                 let $i_like = $a_like.find("i")
-                if ($i_like.hasClass("fa-light")) {
+                let class_r = {"heart": "fa-heart", "star": "fa-star", "like": "fa-thumbs-up"}
+                let class_l = {"heart": "fa-heart-o", "star": "fa-star-o", "like": "fa-thumbs-o-up"}
+                if ($i_like.hasClass(class_r[type])) {
                     $.ajax({
                         type: "POST",
-                        url: `give_like?username_give=${username}`,
+                        url: "/update_like",
                         data: {
-                            cannum_give: cannum,
-                            username_give: username,
+                            can_num_give: can_num,
+                            like_give: "unlike",
+                            type_give: type
+                        },
+                        success: function (response) {
+                            console.log("unlike")
+                            $i_like.addClass(class_l).removeClass(class_r)
+                            $a_like.find("span.like-num").text(num2str(response["count"]))
+                        }
+                    })
+                } else {
+                   $.ajax({
+                        type: "POST",
+                        url: "/update_like",
+                        data: {
+                            can_num_give: can_num,
                             like_give: "like"
                         },
                         success: function (response) {
                             console.log("like")
-                            $i_like.addClass("fa-regular").removeClass("fa-light")
-                            $a_like.find("span.like-num").text(response["count"])
-                        }
-                    })
-                } else {
-                    $.ajax({
-                        type: "POST",
-                        url: `give_like?username_give=${username}`,
-                        data: {
-                            cannum_give: cannum,
-                            username_give: username,
-                            like_give: "like"
-                        },
-                        success: function (response) {
-                            console.log("unlike")
-                            $i_like.addClass("fa-light").removeClass("fa-regular")
-                            $a_like.find("span.like-num").text(response["count"])
+                            $i_like.addClass(class_r).removeClass(l)
+                            $a_like.find("span.like-num").text(num2str(response["count"]))
                         }
                     })
 
-                }}
-
+                }
+            }
     </script>
 
 </head>
 <body>
 <div class="index_header">
-    <label>누구 뽑지?</label>
+    <a href="/"> <label>누구 뽑지?</label></a>
     <h3>당신은 지금 20대 대통령선거의 {{ list[0].symbol }}번 {{ word }} 후보를 보고 있습니다.</h3>
-    <button type="button" class="btn btn-success">로그인</button>
+    <button type="button" class="btn btn-success" onclick="move_page('/login')">로그인</button>
 </div>
 <!-- 전체 박스 -->
 <div class="news_body">
@@ -255,24 +319,26 @@
 
                 <div class="rightone">
 
-                    <div class="info">
+                    <div class="info" id="can_num">
                         <div class="photo">
                             <img src="{{ list[0].image }}">
                         </div>
                         <nav class="level is-mobile">
                             <div class="level-left">
-                                <a class="level-item is-sparta" aria-label="heart"
-                                   onclick="give_like('', 'heart')">
-                                    <span class="icon is-small"><i class="fa fa-heart" aria-hidden="true"></i></span>&nbsp;
-                                    <span class="like-num"></span>
+                                <a class="level-item is-sparta" aria-label="heart" onclick="toggle_like('','heart')">
+                                <span class="icon is-small" ><i class="fa fa-heart-o" aria-hidden="true"></i></span>&nbsp;
+                                    <span class="like-num">0</span>
                                 </a>
+
+
                             </div>
 
                         </nav>
                         <div class="brief">
+
                             <p> {{ list[0].symbol }} </p>
                             <p>이름</p>
-                            {{ word }}
+                            <p>{{ word }}</p>
                             <p></p>
                             <p>소속</p>
                             <p>{{ list[0].party }}</p>
